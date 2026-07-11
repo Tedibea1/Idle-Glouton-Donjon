@@ -39,7 +39,8 @@ html, body {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
 }
 
@@ -80,8 +81,9 @@ html, body {
 
 .fighter-sprite {
   font-size: 3.5rem;
-  width: 260px;
-  height: 260px;
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -275,7 +277,7 @@ html, body {
 
 /* --- Responsive --- */
 @media (max-width: 400px) {
-  .fighter-sprite { width: 200px; height: 200px; }
+  .fighter-sprite { max-width: 160px; }
   #btn-attack { margin: 6px 10px; padding: 12px; font-size: 0.95rem; }
   .upgrade-btn { padding: 6px 3px; }
 }
