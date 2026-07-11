@@ -36,7 +36,10 @@
       </div>
     </main>
 
-    <div id="log"></div>
+    <div id="defeat-screen" class="hidden">
+      <h2>💀 Défaite</h2>
+      <p>L'estomac est plein...</p>
+    </div>
 
     <button id="btn-attack">👊 Attaquer</button>
 
@@ -67,13 +70,8 @@
       </button>
     </div>
 
-    <div id="defeat-screen" class="hidden">
-      <div id="defeat-box">
-        <h2>💀 Défaite</h2>
-        <p>L'estomac est plein...</p>
-        <button id="btn-restart">Recommencer</button>
-      </div>
-    </div>
+    <button id="btn-log-toggle">📜 Journal</button>
+    <div id="log" class="hidden"></div>
 
     <div id="float-layer"></div>
 

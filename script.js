@@ -7,7 +7,7 @@
    ========================================== */
 
 const UPGRADE_COST = 10;
-const ATTACK_CYCLE_MS = 5000;
+const ATTACK_CYCLE_MS = 4000;
 const DIGEST_TICK_MS = 1000;
 const GOLD_PER_KILL = 10;
 
@@ -15,7 +15,7 @@ const HERO_SPRITES = [
   { maxPct: 19,  src: 'assets/images/normal.png' },
   { maxPct: 39,  src: 'assets/images/leger_gonfler.png' },
   { maxPct: 59,  src: 'assets/images/gonfler.png' },
-  { maxPct: 79,  src: 'assets/images/tres_gonfle.png' },
+  { maxPct: 79,  src: 'assets/images/tres_gonfler.png' },
   { maxPct: 99,  src: 'assets/images/super_gonfler.png' },
   { maxPct: 100, src: 'assets/images/full.png' }
 ];
@@ -123,7 +123,7 @@ function cacheDom() {
   dom.monsterLabel   = document.getElementById('monster-label');
   dom.log            = document.getElementById('log');
   dom.btnAttack      = document.getElementById('btn-attack');
-  dom.btnRestart     = document.getElementById('btn-restart');
+  dom.btnLogToggle   = document.getElementById('btn-log-toggle');
   dom.defeatScreen   = document.getElementById('defeat-screen');
   dom.floatLayer     = document.getElementById('float-layer');
   dom.valDamage      = document.getElementById('val-damage');
@@ -348,12 +348,18 @@ function onDefeat() {
   state.stomach = state.capacity;
   playSound('defeat');
   dom.defeatScreen.classList.remove('hidden');
+  dom.btnAttack.textContent = '🔄 Recommencer';
+  dom.btnAttack.removeEventListener('click', heroManualAttack);
+  dom.btnAttack.addEventListener('click', restartGame);
   updateUI();
 }
 
 function restartGame() {
   state = createFreshState();
   dom.defeatScreen.classList.add('hidden');
+  dom.btnAttack.textContent = '👊 Attaquer';
+  dom.btnAttack.removeEventListener('click', restartGame);
+  dom.btnAttack.addEventListener('click', heroManualAttack);
   dom.log.innerHTML = '';
   spawnMonster();
   addLog(`⚔️ Vague 1 — ${MONSTER_SPRITES[state.currentMonsterKey].name} apparaît !`);
@@ -398,6 +404,10 @@ function stopTimers() {
    INIT
    ========================================== */
 
+function toggleLog() {
+  dom.log.classList.toggle('hidden');
+}
+
 function init() {
   cacheDom();
   state = createFreshState();
@@ -407,7 +417,7 @@ function init() {
   startTimers();
 
   dom.btnAttack.addEventListener('click', heroManualAttack);
-  dom.btnRestart.addEventListener('click', restartGame);
+  dom.btnLogToggle.addEventListener('click', toggleLog);
   document.getElementById('up-damage').addEventListener('click', () => buyUpgrade('damage'));
   document.getElementById('up-attacks').addEventListener('click', () => buyUpgrade('attackCount'));
   document.getElementById('up-digestion').addEventListener('click', () => buyUpgrade('digestion'));
