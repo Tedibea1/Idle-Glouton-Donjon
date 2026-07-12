@@ -6,10 +6,12 @@
    STATE
    ========================================== */
 
-const UPGRADE_COST = 10;
 const ATTACK_CYCLE_MS = 4000;
 const DIGEST_TICK_MS = 1000;
 const GOLD_PER_KILL = 10;
+const GOLD_PER_HIT = 5;
+const BASE_UPGRADE_COST = 10;
+const MONSTER_SCALE = 1.2;
 
 const HERO_SPRITES = [
   { maxPct: 19,  src: 'assets/images/normal.png' },
@@ -46,8 +48,13 @@ function createFreshState() {
     monsterMaxHp: 100,
     monsterDamage: 10,
     currentMonsterKey: 'slime',
-    defeated: false
+    defeated: false,
+    upgradeCounts: { damage: 0, attackCount: 0, digestion: 0, capacity: 0 }
   };
+}
+
+function getUpgradeCost(stat) {
+  return Math.floor(BASE_UPGRADE_COST * Math.pow(2, state.upgradeCounts[stat]));
 }
 
 /* ==========================================
@@ -150,13 +157,20 @@ function updateUI() {
   dom.monsterLabel.textContent = `${Math.max(0, state.monsterHp)} / ${state.monsterMaxHp}`;
 
   dom.valDamage.textContent    = state.damage;
-  dom.valAttacks.textContent   = state.attackCount;
+  dom.valAttacks.textContent   = state.attackCount >= 10 ? 'MAX' : state.attackCount;
+  dom.valAttacks.style.color   = state.attackCount >= 10 ? 'var(--red)' : '';
   dom.valDigestion.textContent = state.digestion;
   dom.valCapacity.textContent  = state.capacity;
 
-  document.querySelectorAll('.upgrade-btn').forEach(btn => {
-    btn.classList.toggle('cannot-afford', state.gold < UPGRADE_COST);
-  });
+  document.getElementById('cost-damage').textContent    = `💰 ${getUpgradeCost('damage')}`;
+  document.getElementById('cost-attacks').textContent   = state.attackCount >= 10 ? '—' : `💰 ${getUpgradeCost('attackCount')}`;
+  document.getElementById('cost-digestion').textContent = `💰 ${getUpgradeCost('digestion')}`;
+  document.getElementById('cost-capacity').textContent  = `💰 ${getUpgradeCost('capacity')}`;
+
+  document.getElementById('up-damage').classList.toggle('cannot-afford', state.gold < getUpgradeCost('damage'));
+  document.getElementById('up-attacks').classList.toggle('cannot-afford', state.gold < getUpgradeCost('attackCount') || state.attackCount >= 10);
+  document.getElementById('up-digestion').classList.toggle('cannot-afford', state.gold < getUpgradeCost('digestion'));
+  document.getElementById('up-capacity').classList.toggle('cannot-afford', state.gold < getUpgradeCost('capacity'));
 }
 
 function addLog(msg) {
@@ -249,9 +263,10 @@ function updateHeroSprite() {
    ========================================== */
 
 function spawnMonster() {
-  state.monsterHp = 100;
-  state.monsterMaxHp = 100;
-  state.monsterDamage = 10;
+  const scale = Math.pow(MONSTER_SCALE, state.wave - 1);
+  state.monsterHp = Math.floor(100 * scale);
+  state.monsterMaxHp = Math.floor(100 * scale);
+  state.monsterDamage = Math.floor(10 * scale);
   state.currentMonsterKey = MONSTER_ORDER[(state.wave - 1) % MONSTER_ORDER.length];
   const m = MONSTER_SPRITES[state.currentMonsterKey];
   dom.monsterImg.src = m.src;
@@ -267,15 +282,17 @@ function performAttacks(count, triggerCounter) {
   for (let i = 0; i < count; i++) {
     if (state.monsterHp <= 0) break;
     state.monsterHp = Math.max(0, state.monsterHp - dmg);
+    state.gold += GOLD_PER_HIT;
   }
 
-  addLog(`⚔️ ${count} coup(s) → ${dmg * count} dégâts`);
+  addLog(`⚔️ ${count} coup(s) → ${dmg * count} dégâts +${count * GOLD_PER_HIT}💰`);
   playSound('hero_attack');
 
   for (let i = 0; i < count; i++) {
     setTimeout(() => {
       animateDashAttack(dom.heroImg, dom.monsterImg, dmg, () => {
         spawnFloat(`-${dmg}`, 'red', dom.monsterSprite);
+        spawnFloat(`+${GOLD_PER_HIT}💰`, 'gold', dom.heroSprite);
       });
     }, i * 350);
   }
@@ -384,9 +401,18 @@ function restartGame() {
    ========================================== */
 
 function buyUpgrade(stat) {
-  if (state.gold < UPGRADE_COST) return;
-  state.gold -= UPGRADE_COST;
-  state[stat] += 1;
+  const cost = getUpgradeCost(stat);
+  if (state.gold < cost) return;
+  if (stat === 'attackCount' && state[stat] >= 10) return;
+  state.gold -= cost;
+  if (stat === 'attackCount') {
+    state[stat] += 1;
+  } else if (stat === 'digestion') {
+    state[stat] *= 2;
+  } else {
+    state[stat] = Math.ceil(state[stat] * 1.2);
+  }
+  state.upgradeCounts[stat]++;
   playSound('upgrade');
   addLog(`⬆️ ${stat} → ${state[stat]}`);
   updateUI();
