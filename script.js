@@ -8,10 +8,11 @@
 
 const ATTACK_CYCLE_MS = 4000;
 const DIGEST_TICK_MS = 1000;
-const GOLD_PER_KILL = 10;
-const GOLD_PER_HIT = 5;
+const GOLD_PER_KILL_BASE = 10;
+const MONSTER_HP_SCALE = 1.1;
+const MONSTER_DMG_SCALE = 1.05;
+const NB_ATTACKS_START_COST = 30;
 const BASE_UPGRADE_COST = 10;
-const MONSTER_SCALE = 1.2;
 
 const HERO_SPRITES = [
   { maxPct: 19,  src: 'assets/images/normal.png' },
@@ -54,7 +55,9 @@ function createFreshState() {
 }
 
 function getUpgradeCost(stat) {
-  return Math.floor(BASE_UPGRADE_COST * Math.pow(2, state.upgradeCounts[stat]));
+  const base = stat === 'attackCount' ? NB_ATTACKS_START_COST : BASE_UPGRADE_COST;
+  const mult = stat === 'attackCount' ? 2 : 1.5;
+  return Math.floor(base * Math.pow(mult, state.upgradeCounts[stat]));
 }
 
 /* ==========================================
@@ -265,10 +268,9 @@ function updateHeroSprite() {
    ========================================== */
 
 function spawnMonster() {
-  const scale = Math.pow(MONSTER_SCALE, state.wave - 1);
-  state.monsterHp = Math.floor(100 * scale);
-  state.monsterMaxHp = Math.floor(100 * scale);
-  state.monsterDamage = Math.floor(10 * scale);
+  state.monsterHp = Math.floor(100 * Math.pow(MONSTER_HP_SCALE, state.wave - 1));
+  state.monsterMaxHp = state.monsterHp;
+  state.monsterDamage = Math.floor(10 * Math.pow(MONSTER_DMG_SCALE, state.wave - 1));
   state.currentMonsterKey = MONSTER_ORDER[(state.wave - 1) % MONSTER_ORDER.length];
   const m = MONSTER_SPRITES[state.currentMonsterKey];
   dom.monsterImg.src = m.src;
@@ -284,17 +286,15 @@ function performAttacks(count, triggerCounter) {
   for (let i = 0; i < count; i++) {
     if (state.monsterHp <= 0) break;
     state.monsterHp = Math.max(0, state.monsterHp - dmg);
-    state.gold += GOLD_PER_HIT;
   }
 
-  addLog(`⚔️ ${count} coup(s) → ${dmg * count} dégâts +${count * GOLD_PER_HIT}💰`);
+  addLog(`⚔️ ${count} coup(s) → ${dmg * count} dégâts`);
   playSound('hero_attack');
 
   for (let i = 0; i < count; i++) {
     setTimeout(() => {
       animateDashAttack(dom.heroImg, dom.monsterImg, dmg, () => {
         spawnFloat(`-${dmg}`, 'red', dom.monsterSprite);
-        spawnFloat(`+${GOLD_PER_HIT}💰`, 'gold', dom.heroSprite);
       });
     }, i * 350);
   }
@@ -363,10 +363,11 @@ function digest() {
    ========================================== */
 
 function onMonsterKilled() {
-  state.gold += GOLD_PER_KILL;
+  const goldEarned = GOLD_PER_KILL_BASE + state.wave;
+  state.gold += goldEarned;
   state.wave++;
   playSound('monster_kill');
-  addLog(`🏆 Vaincu ! +${GOLD_PER_KILL}💰`);
+  addLog(`🏆 Vaincu ! +${goldEarned}💰`);
 
   spawnMonster();
 }
@@ -414,10 +415,8 @@ function buyUpgrade(stat) {
   if (state.gold < cost) return;
   if (stat === 'attackCount' && state[stat] >= 10) return;
   state.gold -= cost;
-  if (stat === 'attackCount') {
+  if (stat === 'attackCount' || stat === 'digestion') {
     state[stat] += 1;
-  } else if (stat === 'digestion') {
-    state[stat] *= 2;
   } else {
     state[stat] = Math.ceil(state[stat] * 1.2);
   }
