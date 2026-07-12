@@ -132,6 +132,7 @@ function cacheDom() {
   dom.btnAttack      = document.getElementById('btn-attack');
   dom.btnLogToggle   = document.getElementById('btn-log-toggle');
   dom.defeatScreen   = document.getElementById('defeat-screen');
+  dom.bellyOverlay   = document.getElementById('belly-overlay');
   dom.floatLayer     = document.getElementById('float-layer');
   dom.valDamage      = document.getElementById('val-damage');
   dom.valAttacks     = document.getElementById('val-attacks');
@@ -150,6 +151,7 @@ function updateUI() {
   const stomachPct = Math.min(100, (state.stomach / state.capacity) * 100);
   dom.heroBar.style.width = stomachPct + '%';
   dom.heroLabel.textContent = `${Math.floor(state.stomach)} / ${state.capacity}`;
+  dom.heroSprite.classList.toggle('hero-danger', stomachPct >= 90 && !state.defeated);
   updateHeroSprite();
 
   const monsterPct = (state.monsterHp / state.monsterMaxHp) * 100;
@@ -229,7 +231,7 @@ function animateDashAttack(heroImg, monsterImg, dmg, onImpact, direction) {
     { transform: `translateX(${dashX}) scale(1.05)` },
     { transform: `translateX(${dashX}) scale(1.05)` },
     { transform: 'translateX(0)' }
-  ], { duration: 300, easing: 'ease-in-out', fill: 'forwards' });
+  ], { duration: 300, easing: 'ease-in-out' });
 
   dash.onfinish = () => {
     heroImg.style.transform = '';
@@ -378,6 +380,10 @@ function onDefeat() {
   state.stomach = state.capacity;
   playSound('defeat');
   dom.defeatScreen.classList.remove('hidden');
+  dom.heroSprite.classList.remove('hero-danger');
+  dom.heroSprite.classList.add('hero-defeat');
+  dom.bellyOverlay.classList.remove('hidden');
+  dom.bellyOverlay.classList.add('pulse');
   dom.btnAttack.textContent = '🔄 Recommencer';
   dom.btnAttack.removeEventListener('click', heroManualAttack);
   dom.btnAttack.addEventListener('click', restartGame);
@@ -387,6 +393,9 @@ function onDefeat() {
 function restartGame() {
   state = createFreshState();
   dom.defeatScreen.classList.add('hidden');
+  dom.heroSprite.classList.remove('hero-defeat');
+  dom.bellyOverlay.classList.add('hidden');
+  dom.bellyOverlay.classList.remove('pulse');
   dom.btnAttack.textContent = '👊 Attaquer';
   dom.btnAttack.removeEventListener('click', restartGame);
   dom.btnAttack.addEventListener('click', heroManualAttack);
