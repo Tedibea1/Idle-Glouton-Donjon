@@ -163,7 +163,7 @@ function updateUI() {
   dom.valCapacity.textContent  = state.capacity;
 
   document.getElementById('cost-damage').textContent    = `💰 ${getUpgradeCost('damage')}`;
-  document.getElementById('cost-attacks').textContent   = state.attackCount >= 10 ? '—' : `💰 ${getUpgradeCost('attackCount')}`;
+  document.getElementById('cost-attacks').textContent   = state.attackCount >= 10 ? '' : `💰 ${getUpgradeCost('attackCount')}`;
   document.getElementById('cost-digestion').textContent = `💰 ${getUpgradeCost('digestion')}`;
   document.getElementById('cost-capacity').textContent  = `💰 ${getUpgradeCost('capacity')}`;
 
