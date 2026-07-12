@@ -208,12 +208,24 @@ function animateFlash(el) {
   ], { duration: 150 });
 }
 
-function animateAttack(el) {
-  el.animate([
-    { transform: 'scale(1)' },
-    { transform: 'scale(1.12)' },
-    { transform: 'scale(1)' }
-  ], { duration: 180, easing: 'ease-out' });
+function animateDashAttack(heroImg, monsterImg, dmg, onImpact, direction) {
+  const dashX = direction === 'left' ? '-60px' : '60px';
+  const dash = heroImg.animate([
+    { transform: 'translateX(0)' },
+    { transform: `translateX(${dashX}) scale(1.05)` },
+    { transform: `translateX(${dashX}) scale(1.05)` },
+    { transform: 'translateX(0)' }
+  ], { duration: 300, easing: 'ease-in-out', fill: 'forwards' });
+
+  dash.onfinish = () => {
+    heroImg.style.transform = '';
+  };
+
+  setTimeout(() => {
+    animateShake(monsterImg, 6, 200);
+    animateFlash(monsterImg);
+    if (onImpact) onImpact();
+  }, 120);
 }
 
 /* ==========================================
@@ -250,28 +262,29 @@ function spawnMonster() {
    PLAYER ATTACK
    ========================================== */
 
-function performAttacks(count) {
+function performAttacks(count, triggerCounter) {
   const dmg = state.damage;
   for (let i = 0; i < count; i++) {
     if (state.monsterHp <= 0) break;
     state.monsterHp = Math.max(0, state.monsterHp - dmg);
   }
 
-  const totalDmg = dmg * Math.min(count, Math.ceil(state.monsterHp / dmg + 1));
   addLog(`⚔️ ${count} coup(s) → ${dmg * count} dégâts`);
   playSound('hero_attack');
-  animateAttack(dom.heroSprite);
 
   for (let i = 0; i < count; i++) {
     setTimeout(() => {
-      animateShake(dom.monsterSprite, 6, 200);
-      animateFlash(dom.monsterSprite);
-      spawnFloat(`-${dmg}`, 'red', dom.monsterSprite);
-    }, i * 120);
+      animateDashAttack(dom.heroImg, dom.monsterImg, dmg, () => {
+        spawnFloat(`-${dmg}`, 'red', dom.monsterSprite);
+      });
+    }, i * 350);
   }
 
   if (state.monsterHp <= 0) {
     onMonsterKilled();
+  } else if (triggerCounter) {
+    const heroAttackEnd = count * 350 + 300;
+    setTimeout(monsterAttack, heroAttackEnd);
   }
 
   updateUI();
@@ -280,14 +293,14 @@ function performAttacks(count) {
 function heroAutoAttack() {
   if (state.defeated) return;
   if (state.monsterHp <= 0) return;
-  performAttacks(state.attackCount);
+  performAttacks(state.attackCount, true);
 }
 
 function heroManualAttack() {
   if (state.defeated) return;
   playSound('click');
   if (state.monsterHp <= 0) return;
-  performAttacks(1);
+  performAttacks(1, false);
 }
 
 /* ==========================================
@@ -303,9 +316,9 @@ function monsterAttack() {
 
   addLog(`💢 ${MONSTER_SPRITES[state.currentMonsterKey].name} → +${dmg} estomac`);
   playSound('monster_attack');
-  animateShake(dom.heroSprite, 5, 200);
-  animateFlash(dom.heroSprite);
-  spawnFloat(`+${dmg}`, 'gold', dom.heroSprite);
+  animateDashAttack(dom.monsterImg, dom.heroImg, dmg, () => {
+    spawnFloat(`+${dmg}`, 'red', dom.heroSprite);
+  }, 'left');
 
   if (state.stomach >= state.capacity) {
     onDefeat();
@@ -384,19 +397,16 @@ function buyUpgrade(stat) {
    ========================================== */
 
 let autoAttackTimer = null;
-let monsterTimer = null;
 let digestTimer = null;
 
 function startTimers() {
   stopTimers();
   autoAttackTimer = setInterval(heroAutoAttack, ATTACK_CYCLE_MS);
-  monsterTimer = setInterval(monsterAttack, ATTACK_CYCLE_MS);
   digestTimer = setInterval(digest, DIGEST_TICK_MS);
 }
 
 function stopTimers() {
   if (autoAttackTimer) clearInterval(autoAttackTimer);
-  if (monsterTimer) clearInterval(monsterTimer);
   if (digestTimer) clearInterval(digestTimer);
 }
 

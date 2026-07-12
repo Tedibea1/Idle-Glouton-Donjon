@@ -99,6 +99,12 @@ html, body {
   height: 100%;
   object-fit: contain;
   pointer-events: none;
+  animation: idleBreathe 2s ease-in-out infinite;
+}
+
+@keyframes idleBreathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
 
 .fighter-name {
