@@ -54,7 +54,7 @@ function createFreshState() {
 }
 
 function getUpgradeCost(stat) {
-  return Math.floor(BASE_UPGRADE_COST * Math.pow(2, state.upgradeCounts[stat]));
+  return Math.floor(BASE_UPGRADE_COST * Math.pow(1.2, state.upgradeCounts[stat]));
 }
 
 /* ==========================================
